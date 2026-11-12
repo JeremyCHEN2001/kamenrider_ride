@@ -114,3 +114,12 @@ dialog{max-height:calc(100% - 16px);overflow:auto}
  dialog .muted{display:none}
 }
 @media(max-width:360px){.eyebrow{display:none}}
+
+/* Wind-belt feedback: absorbing state and the "ready to boost" cue. */
+@keyframes windPulse{0%,100%{box-shadow:0 0 3px #ffe29a55;background:#ffe29a}50%{box-shadow:0 0 18px #ffe29a;background:#fff2c4}}
+.wind-ready .energy i{background:#ffe29a!important;animation:windPulse 1.1s ease-in-out infinite}
+.wind-ready #wind-state,.wind-ready #wind-value{color:#ffe6a8;text-shadow:0 0 12px #ffcf7044}
+.wind-ready #touch button[data-key="ShiftLeft"]{border-color:#ffe29a;box-shadow:0 0 14px #ffe29a55}
+.absorbing #touch button[data-key="KeyE"]{background:#2e5b4c;border-color:#b9ffe9;box-shadow:0 0 14px #b9ffe955}
+
+#wind-state,#wind-value{white-space:nowrap}
