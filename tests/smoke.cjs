@@ -1,10 +1,10 @@
 const fs=require('node:fs'),vm=require('node:vm'),assert=require('node:assert/strict');
 const THREE=require('../vendor/three.min.js');
 const nodes=new Map(),handlers={};let callback,now=0;
-function node(){return {hidden:false,style:{},dataset:{},textContent:'',innerHTML:'',classList:{add(){},remove(){},toggle(){}},appendChild(){},addEventListener(){},setPointerCapture(){},showModal(){this.open=true},close(){this.open=false},getContext(){return {fillRect(){},fillStyle:''}}};}
+function node(){return {hidden:false,style:{},dataset:{},textContent:'',innerHTML:'',classList:{add(){},remove(){},toggle(){}},appendChild(){},addEventListener(){},setPointerCapture(){},showModal(){this.open=true},close(){this.open=false},getContext(){return {fillRect(){},fillText(){},fillStyle:''}}};}
 THREE.WebGLRenderer=class{constructor(){this.domElement=node();this.shadowMap={};this.info={render:{calls:0}}}setPixelRatio(){}setSize(){}render(){}};
 const sandbox={THREE,console,innerWidth:1440,innerHeight:900,devicePixelRatio:1,performance:{now:()=>now},localStorage:{getItem(){return null},setItem(){}},document:{getElementById:id=>{if(!nodes.has(id))nodes.set(id,node());return nodes.get(id)},createElement:node,querySelectorAll:()=>[],body:node(),addEventListener(){}},addEventListener:(type,f)=>handlers[type]=f,requestAnimationFrame:f=>callback=f};sandbox.window=sandbox;
-vm.runInNewContext(fs.readFileSync('game.js','utf8'),sandbox);const game=sandbox.riderGame;
+const source=fs.readFileSync('game.js','utf8').replace(/\}\)\(\);\s*$/, 'window.testControl={state,items:()=>items};})();');vm.runInNewContext(source,sandbox);const game=sandbox.riderGame;
 function frames(n){for(let i=0;i<n;i++){now+=1000/60;callback(now);}}
 function down(code){handlers.keydown({code,preventDefault(){}})}function up(code){handlers.keyup({code})}
 assert.equal(game.snapshot().mode,'intro');for(let scene=0;scene<3;scene++){game.setScene(scene);assert(game.snapshot().clearance>=6.39,'scene '+scene+' must keep scenery outside the track');}game.setScene(0);frames(90);const lightDay=game.snapshot();game.setScene(2);frames(150);const lightDark=game.snapshot();assert(lightDark.darkness>lightDay.darkness+.3,'tunnel must be darker');assert(lightDark.headlight>lightDay.headlight+10,'dark scene must brighten the headlight');assert(lightDark.eyeGlow>lightDay.eyeGlow+.5,'dark scene must brighten the eyes');assert(lightDark.beltGlow>lightDay.beltGlow+.5,'dark scene must brighten the belt');game.setScene(0);frames(60);game.start();assert.equal(game.snapshot().camera,1);assert.equal(game.snapshot().windReady,true);assert(game.snapshot().clearance>=6.39,'scenery must stay outside the track clearance');down('KeyC');up('KeyC');assert.equal(game.snapshot().camera,2);game.start();assert.equal(game.snapshot().camera,1);frames(60);assert(game.snapshot().distance>25);assert(game.snapshot().speed>=110);
@@ -22,13 +22,28 @@ down('ShiftLeft');frames(330);assert.equal(game.snapshot().boost,false);assert(g
 down('KeyE');frames(12);assert(game.snapshot().charging);const idleEnergy=game.snapshot().energy;up('KeyE');down('KeyE');frames(1);assert.equal(game.snapshot().charging,false);up('KeyE');assert(game.snapshot().energy>=idleEnergy);
 down('KeyE');let windFrames=0;while(game.snapshot().energy<100&&windFrames++<600)frames(1);assert.equal(game.snapshot().energy,100);assert.equal(game.snapshot().windReady,true);assert.equal(game.snapshot().absorbing,false);assert.equal(game.snapshot().charging,false);assert(game.snapshot().windBurst>.5,'full wind must trigger the belt burst');up('KeyE');
 game.pause();const paused=game.snapshot();frames(60);assert.equal(game.snapshot().distance,paused.distance);assert.equal(game.snapshot().energy,paused.energy);assert.equal(game.snapshot().time,paused.time);game.pause();
-down('KeyW');frames(6000);up('KeyW');assert.equal(game.snapshot().mode,'finished');assert.equal(game.snapshot().scene,2);assert(game.snapshot().distance>=3000);
-game.start();const lanes1=game.snapshot().items.filter(i=>i.kind==='barrier').map(i=>i.x);assert(new Set(lanes1).size>=2,'barriers must cover more than one lane');
+down('KeyW');frames(12000);up('KeyW');assert.equal(game.snapshot().mode,'finished');assert.equal(game.snapshot().scene,2);assert(game.snapshot().distance>=7000);
+game.start();const initial=game.snapshot().items;assert.equal(initial.filter(i=>i.kind==='barrier').length,10);assert.equal(initial.filter(i=>i.kind==='spider').length,2);const lanes1=initial.filter(i=>i.kind!=='energy').map(i=>i.x);assert(new Set(lanes1).size>=2,'barriers must cover more than one lane');
 const layout1=game.snapshot().items.map(i=>i.kind+i.x).join('|');game.start();const layout2=game.snapshot().items.map(i=>i.kind+i.x).join('|');assert.notEqual(layout1,layout2,'each start must reroll the layout');
 game.start();frames(300);assert(game.snapshot().score>0);
 // Pick a real barrier from this run, steer into its lane, then wait for the collision.
-game.start();const target=game.snapshot().items.filter(i=>i.kind==='barrier').reduce((a,b)=>b.z>a.z?b:a);const dir=target.x>0?'KeyD':target.x<0?'KeyA':null;if(dir)down(dir);let steerFrames=0;while(dir&&Math.abs(game.snapshot().x-target.x)>.12&&steerFrames++<240)frames(1);if(dir)up(dir);let collideFrames=0;while(game.snapshot().hp===5&&collideFrames++<2400)frames(1);assert(game.snapshot().hp<5);
-game.start();assert.equal(game.snapshot().hp,5);assert.equal(game.snapshot().distance,0);assert.equal(game.snapshot().spool,0);game.home();frames(1);assert.equal(game.snapshot().mode,'intro');assert.equal(game.snapshot().flamePower,0);assert.equal(game.snapshot().windOpacity,0);
+game.start();const target=game.snapshot().items.filter(i=>i.kind!=='energy').reduce((a,b)=>b.z>a.z?b:a);const dir=target.x>0?'KeyD':target.x<0?'KeyA':null;if(dir)down(dir);let steerFrames=0;while(dir&&Math.abs(game.snapshot().x-target.x)>.12&&steerFrames++<240)frames(1);if(dir)up(dir);let collideFrames=0;while(game.snapshot().hp===100&&collideFrames++<2400)frames(1);assert.equal(game.snapshot().hp,100-(target.kind==='spider'?20:10));
+game.start();assert.equal(game.snapshot().hp,100);assert.equal(game.snapshot().distance,0);assert.equal(game.snapshot().spool,0);game.home();frames(1);assert.equal(game.snapshot().mode,'intro');assert.equal(game.snapshot().flamePower,0);assert.equal(game.snapshot().windOpacity,0);
+// Telegraph and strike follow approach distance, pause freezes the pose, and recycled enemies reset.
+for(const kind of ['spider']){
+ game.start();const enemy=sandbox.testControl.items().find(i=>i.userData.kind===kind);enemy.position.set(2.8,0,-40);frames(1);assert(enemy.userData.warning.visible);const windup=enemy.userData.arms[0].rotation.x;
+ enemy.position.z=-5;frames(17);assert(enemy.userData.arms[0].rotation.x<windup-.7,kind+' must lunge as the rider approaches');
+ const strike=enemy.userData.arms[0].rotation.x;game.pause();frames(10);assert.equal(enemy.userData.arms[0].rotation.x,strike);game.pause();
+ enemy.position.z=7.99;frames(1);frames(1);assert(!enemy.userData.warning.visible,'recycled enemy must reset warning');
+}
+// Place the actual enemy meshes on the collision path to check both damage values and death.
+for(const [kind,damage] of [['barrier',10],['spider',20]]){
+ game.start();const enemy=sandbox.testControl.items().find(i=>i.userData.kind===kind);enemy.position.set(0,0,-.5);frames(1);assert.equal(game.snapshot().hp,100-damage,kind+' damage');
+}
+game.start();sandbox.testControl.state.hp=3;const fatal=sandbox.testControl.items().find(i=>i.userData.kind==='barrier');fatal.position.set(0,0,-.5);frames(1);assert.equal(game.snapshot().hp,0);assert.equal(game.snapshot().mode,'finished');
+// Verify transitions at one third and two thirds of the four-kilometer course.
+game.start();game.setScene(0);sandbox.testControl.state.distance=7000/3-1;frames(4);assert.equal(game.snapshot().scene,1);sandbox.testControl.state.distance=14000/3-1;frames(4);assert.equal(game.snapshot().scene,2);sandbox.testControl.state.distance=6999;frames(4);assert.equal(game.snapshot().mode,'finished');
+game.start();sandbox.testControl.state.distance=6699;frames(1);assert(game.snapshot().finishVisible);assert(Math.abs(game.snapshot().finishZ+(7000-game.snapshot().distance))<.01);game.pause();const finishZ=game.snapshot().finishZ;frames(30);assert.equal(game.snapshot().finishZ,finishZ);game.start();frames(1);assert.equal(game.snapshot().finishVisible,false);
 // Brake input is gone: S must not change the cruise speed.
 game.start();const cruise=game.snapshot().speed;down('KeyS');frames(60);up('KeyS');assert.equal(game.snapshot().speed,cruise);
 console.log('PASS: cruise/top speed, wind toggle + belt burst + full charge, dark-scene headlight/eyes/belt, spool, flames, depletion lockout, smooth boost release, no brake input, jump, pause, track clearance, randomized barrier layouts, collisions, pickups, scene progression, completion and reset.');

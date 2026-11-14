@@ -223,26 +223,107 @@ function nextItemLane(){
 }
 function createItems(){
  clearGroup(hazards);items=[];resetItemLayout();
- const kinds=Array.from({length:24},(_,i)=>i<8?'barrier':'energy');
+ const kinds=[...Array(10).fill('barrier'),...Array(2).fill('spider'),...Array(18).fill('energy')];
  for(let i=kinds.length-1;i>0;i--){const j=Math.floor(itemRandom()*(i+1));[kinds[i],kinds[j]]=[kinds[j],kinds[i]];}
  const firstEnergy=kinds.indexOf('energy');if(firstEnergy!==0)[kinds[0],kinds[firstEnergy]]=[kinds[firstEnergy],kinds[0]];
- for(let i=0;i<24;i++){
+ for(let i=0;i<kinds.length;i++){
   const kind=kinds[i],g=new T.Group(),lane=i===0?0:nextItemLane();
   g.userData.kind=kind;
   if(kind==='energy'){
    mesh(new T.TorusGeometry(.32,.045,8,24),mat('#a7e4b4',.45,.3,{emissive:'#64d69b',emissiveIntensity:1.2}),g,0,.95,0);
    ell(g,mat('#c3e8ac',.1,.2,{emissive:'#8ccf7a',emissiveIntensity:1}),0,.95,0,.1,.1,.1);
+  }else if(kind==='barrier'){
+   // A low, clearly readable roadblock preserves jump clearance.
+   box(g,black,0,.4,0,1.45,.8,.5);
+   for(let j=0;j<5;j++){const stripe=box(g,mat('#ddbb53'),-.57+j*.28,.43,.26,.12,.63,.012);stripe.rotation.z=-.4;}
+   // Stylized SHOCKER eagle badge: central crest and stepped spread wings.
+   const crest=mat('#e8e4d5',.1,.5),badge=mat('#9d252b',.15,.6);
+   box(g,badge,0,.43,.28,.5,.54,.025);
+   ell(g,crest,0,.46,.31,.055,.16,.015);
+   for(const side of [-1,1])for(let feather=0;feather<3;feather++){
+    rod(g,crest,[side*.025,.5-feather*.04,.31],[side*(.2-feather*.035),.62-feather*.075,.31],.017);
+   }
+   ell(g,crest,0,.62,.31,.04,.04,.015);rod(g,crest,[0,.62,.31],[.07,.6,.31],.012);
+   for(const side of [-1,1])box(g,mat('#f17445',.1,.4,{emissive:'#f13b20',emissiveIntensity:.8}),side*.53,.87,0,.16,.12,.2);
   }else{
-   box(g,black,0,.4,0,1.4,.8,.5);
-   for(let j=0;j<5;j++){const stripe=box(g,mat('#d8b75e'),-.57+j*.28,.43,.26,.12,.63,.012);stripe.rotation.z=-.4;}
-   for(const s of [-1,1])box(g,red,s*.52,.88,0,.14,.1,.2);
+   // Film-inspired SHOCKER tactical team and Kumo-Aug silhouette.
+   const spider=kind==='spider',suit=mat(spider?'#242422':'#202425',.08,.88),vest=mat(spider?'#3c3a32':'#303536',.08,.9),bone=mat('#dadbd2',.1,.65),dark=mat('#101415',.2,.7),metal=mat('#555f5b',.5,.42);
+   const body=new T.Group();g.add(body);g.userData.body=body;g.userData.arms=[];
+   ell(body,suit,0,1.18,0,.29,.43,.18);box(body,vest,0,1.22,.08,.53,.57,.24);
+   box(body,dark,0,.92,.04,.54,.1,.3);box(body,metal,0,.92,.205,.11,.065,.025);
+   // Tactical vest: segmented pouches, straps, and a restrained insignia.
+   for(const side of [-1,1]){
+    box(body,dark,side*.15,1.13,.225,.19,.19,.07);box(body,metal,side*.15,1.24,.26,.19,.015,.015);
+    rod(body,dark,[side*.25,1.48,.13],[side*.16,1.31,.22],.035);
+    rod(g,suit,[side*.16,.9,0],[side*.22,.48,.02],.1);rod(g,suit,[side*.22,.48,.02],[side*.25,.12,.05],.08);ell(g,dark,side*.25,.09,.09,.11,.08,.16);
+    const arm=new T.Group();arm.position.set(side*.3,1.43,0);body.add(arm);g.userData.arms.push(arm);
+    rod(arm,suit,[0,0,0],[side*.12,-.26,.015],.09);ell(arm,vest,side*.12,-.26,.015,.095,.095,.09);
+    rod(arm,suit,[side*.12,-.26,.015],[side*.14,-.5,.12],.07);ell(arm,dark,side*.14,-.52,.14,.075,.09,.09);
+   }
+   const head=new T.Group();body.add(head);
+   ell(head,dark,0,1.72,0,.19,.23,.17);
+   if(!spider){
+    // Lower-rank operatives wear a pale spiderweb faceplate, not skeleton suits.
+    ell(head,bone,0,1.69,.15,.155,.155,.035);ell(head,dark,-.065,1.75,.177,.045,.025,.012);ell(head,dark,.065,1.75,.177,.045,.025,.012);
+    for(let i=-2;i<=2;i++)rod(head,dark,[i*.045,1.58,.173],[i*.055,1.79,.173],.006);
+    for(let i=0;i<3;i++)rod(head,dark,[-.13,1.6+i*.05,.177],[.13,1.6+i*.05,.177],.006);
+    box(body,mat('#c3c5bc'),0,1.42,.205,.18,.055,.012);
+    const cap=mesh(new T.CylinderGeometry(.185,.22,.13,20),dark,head,0,1.94,0);
+    ell(head,dark,0,1.895,.13,.22,.035,.16);
+    ell(head,metal,0,1.95,.195,.035,.025,.012);
+   }else{
+    // Spider augment: protective vest, compound green lenses, respirator and dark trailing locks.
+    const lens=mat('#426d57',.35,.3,{emissive:'#183e2c',emissiveIntensity:.5});
+    ell(head,lens,-.083,1.76,.142,.064,.066,.035);ell(head,lens,.083,1.76,.142,.064,.066,.035);
+    ell(head,dark,0,1.64,.18,.12,.1,.065);for(const side of [-1,1]){ell(head,metal,side*.085,1.64,.224,.04,.045,.025);rod(head,bone,[side*.02,1.66,.244],[side*.09,1.61,.221],.008);}
+    for(let k=0;k<10;k++){const angle=k/10*Math.PI*2,x=Math.sin(angle)*.16,z=Math.cos(angle)*.12-.04;rod(head,dark,[x,1.87,z],[x*1.5,1.48,z-.11],.028,.018);}
+    for(const side of [-1,1])for(let k=0;k<4;k++){const y=1.05-k*.13;ell(g,bone,side*.17,y,.095,.022,.022,.012);}
+   }
+   for(const feature of head.children)feature.position.y-=1.72;head.position.y=1.72;head.scale.setScalar(1.42);
+   const warning=mesh(new T.RingGeometry(.48,.56,32),mat(spider?'#e96d56':'#dfba75',0,.7,{transparent:true,opacity:.7,side:T.DoubleSide,depthWrite:false}),g,0,.035,0);warning.rotation.x=-Math.PI/2;warning.visible=false;warning.castShadow=false;g.userData.warning=warning;
+
   }
   g.position.set(lane,0,-35-i*15);
   hazards.add(g);items.push(g);
  }
 }
+// Distance-based anticipation and lunge keep the strike legible at any speed.
+function animateEnemy(item,time,dt){
+ const z=item.position.z,near=z>-48&&z<2;
+ // Anticipation is visible early; the actual attack is a quick timed motion.
+ if(z>-26&&z<2&&item.userData.attackTime==null)item.userData.attackTime=0;
+ if(item.userData.attackTime!=null)item.userData.attackTime+=dt;
+ const t=item.userData.attackTime,windup=t==null?0:T.MathUtils.smoothstep(t,0,.10);
+ const strike=t==null?0:T.MathUtils.smoothstep(t,.10,.23);
+ const bob=Math.sin(time*3.2+item.position.x)*.018;
+ item.userData.body.rotation.x=-windup*.09-strike*.22;
+ item.userData.body.position.y=bob-windup*.04;
+ item.userData.arms[0].rotation.x=-.2+windup*.35-strike*1.85;
+ item.userData.arms[1].rotation.x=-.25-windup*.45-strike*(item.userData.kind==='spider'?1.05:.25);
+ item.userData.arms[0].rotation.z=.12+strike*.14;
+ item.userData.arms[1].rotation.z=-.12-strike*.14;
+ item.userData.warning.visible=near&&z<-1;
+}
+// Finish landmark: industrial gateway inspired by the film's factory locations.
+// Its position is derived from distance, not scenery recycling.
+const finishGate=new T.Group();scene.add(finishGate);finishGate.visible=false;
+const gateDark=mat('#343e3c',.45,.65),gateLight=new T.MeshBasicMaterial({color:'#ffe7a3',fog:false,toneMapped:false});
+for(const side of [-1,1]){
+ box(finishGate,gateDark,side*4.8,3.3,0,.45,6.6,.6);
+ box(finishGate,gateLight,side*4.53,3.3,.04,.18,5.4,.14);
+ for(let i=0;i<4;i++)box(finishGate,silver,side*4.8,1.1+i*1.35,.35,.55,.08,.08);
+}
+box(finishGate,gateDark,0,6.25,0,10,.8,.7);
+box(finishGate,gateLight,0,5.65,.38,8.7,.2,.14);
+const signCanvas=document.createElement('canvas');signCanvas.width=1024;signCanvas.height=128;const signCtx=signCanvas.getContext('2d');
+signCtx.fillStyle='#f8d890';signCtx.fillRect(0,0,1024,128);signCtx.font='bold 76px sans-serif';signCtx.textAlign='center';signCtx.textBaseline='middle';signCtx.fillStyle='#172526';signCtx.fillText('FINISH  /  终点',512,68);
+const signTexture=new T.CanvasTexture(signCanvas);signTexture.colorSpace=T.SRGBColorSpace;
+const finishLamp=new T.PointLight('#ffe7a3',55,22,2);finishLamp.position.set(0,5,1);finishGate.add(finishLamp);
+const sign=mesh(new T.PlaneGeometry(8.7,1.1),new T.MeshBasicMaterial({map:signTexture,side:T.DoubleSide,fog:false,toneMapped:false}),finishGate,0,6.27,.37);sign.castShadow=false;
+for(let i=0;i<10;i++)box(finishGate,mat(i%2?'#ddddce':'#252e2b'),-4.5+i,.025,0,1,.025,.55);
+function updateFinish(distance,mode){finishGate.position.z=-(7000-distance);finishGate.visible=mode!=='intro'&&distance>=6600&&distance<=7004;}
 buildEnvironment(0);createItems();
-const state={mode:'intro',speed:0,x:0,distance:0,score:0,energy:100,hp:5,jump:0,vy:0,invulnerable:0,camera:1,time:0,boost:false,charging:false,absorbing:false,windReady:true,spool:0,boostLocked:false};let best=0;try{best=Number(localStorage.getItem('shin-rider-best'))||0;}catch{}$('best').textContent=String(best).padStart(5,'0');const keys={},touch={gas:false,steer:0,boost:false,pointers:new Map(),primary:null,startX:0,hintTimer:0};let sound=false,audioContext,engine,gain,windGain,toastTimer=0,zoom=1;
+const state={mode:'intro',speed:0,x:0,distance:0,score:0,energy:100,hp:100,jump:0,vy:0,invulnerable:0,camera:1,time:0,boost:false,charging:false,absorbing:false,windReady:true,spool:0,boostLocked:false};let best=0;try{best=Number(localStorage.getItem('shin-rider-best'))||0;}catch{}$('best').textContent=String(best).padStart(5,'0');const keys={},touch={gas:false,steer:0,boost:false,pointers:new Map(),primary:null,startX:0,hintTimer:0};let sound=false,audioContext,engine,gain,windGain,toastTimer=0,zoom=1;
 function audioInit(){if(audioContext)return;try{audioContext=new(window.AudioContext||window.webkitAudioContext)();engine=audioContext.createOscillator();engine.type='sawtooth';const filter=audioContext.createBiquadFilter();filter.type='lowpass';filter.frequency.value=180;gain=audioContext.createGain();gain.gain.value=0;engine.connect(filter);filter.connect(gain);gain.connect(audioContext.destination);engine.start();const noise=audioContext.createBufferSource(),noiseBuffer=audioContext.createBuffer(1,audioContext.sampleRate*2,audioContext.sampleRate),data=noiseBuffer.getChannelData(0);for(let i=0;i<data.length;i++)data[i]=(Math.random()*2-1)*.32;noise.buffer=noiseBuffer;noise.loop=true;const windFilter=audioContext.createBiquadFilter();windFilter.type='bandpass';windFilter.frequency.value=720;windFilter.Q.value=.7;windGain=audioContext.createGain();windGain.gain.value=0;noise.connect(windFilter);windFilter.connect(windGain);windGain.connect(audioContext.destination);noise.start();}catch{}}
 function toggleSound(){audioInit();sound=!sound;if(sound)audioContext?.resume();$('audio').textContent='声音 '+(sound?'ON':'OFF');}
 function ping(f,d=.12){if(!sound||!audioContext)return;const o=audioContext.createOscillator(),g=audioContext.createGain();o.frequency.setValueAtTime(f,audioContext.currentTime);o.frequency.exponentialRampToValueAtTime(f*.6,audioContext.currentTime+d);g.gain.setValueAtTime(.07,audioContext.currentTime);g.gain.exponentialRampToValueAtTime(.001,audioContext.currentTime+d);o.connect(g);g.connect(audioContext.destination);o.start();o.stop(audioContext.currentTime+d);}
@@ -250,7 +331,7 @@ function toast(s){$('toast').textContent=s;toastTimer=2;}
 function touchReset(){touch.gas=false;touch.steer=0;touch.boost=false;touch.pointers.clear();touch.primary=null;}
 function hideGestureHint(){touch.hintTimer=0;$('gesture-hint')?.classList.remove('show');}
 function showGestureHint(){if(!touchCapable)return;touch.hintTimer=7;$('gesture-hint')?.classList.add('show');}
-function start(){if($('result').open)$('result').close();Object.assign(state,{mode:'playing',camera:1,speed:110,x:0,distance:0,score:0,energy:100,hp:5,jump:0,vy:0,invulnerable:0,boost:false,charging:false,absorbing:false,windReady:true,spool:0,boostLocked:false});effectPower=0;chargeFx=0;windBurst=0;Object.keys(keys).forEach(k=>delete keys[k]);touchReset();showGestureHint();zoom=1;$('camera').textContent='C · 追逐视角';camera.position.set(0,3.2,7.5);createItems();$('intro').hidden=true;$('hud').hidden=false;document.body.classList.add('playing');$('pause').textContent='Ⅱ 暂停';toast('突破封锁 · 抵达 3 KM');audioContext?.resume();}
+function start(){if($('result').open)$('result').close();Object.assign(state,{mode:'playing',camera:1,speed:110,x:0,distance:0,score:0,energy:100,hp:100,jump:0,vy:0,invulnerable:0,boost:false,charging:false,absorbing:false,windReady:true,spool:0,boostLocked:false});effectPower=0;chargeFx=0;windBurst=0;Object.keys(keys).forEach(k=>delete keys[k]);touchReset();showGestureHint();zoom=1;$('camera').textContent='C · 追逐视角';camera.position.set(0,3.2,7.5);createItems();$('intro').hidden=true;$('hud').hidden=false;document.body.classList.add('playing');$('pause').textContent='Ⅱ 暂停';toast('突破封锁 · 抵达 7 KM');audioContext?.resume();}
 function home(){state.mode='intro';$('hud').hidden=true;$('intro').hidden=false;document.body.classList.remove('playing');if($('result').open)$('result').close();touchReset();hideGestureHint();state.x=0;state.jump=0;state.invulnerable=0;state.speed=0;state.boost=false;state.charging=false;state.absorbing=false;state.windReady=false;state.spool=0;effectPower=0;chargeFx=0;windBurst=0;}
 function finish(win){state.mode='finished';state.absorbing=false;state.charging=false;touchReset();hideGestureHint();const total=state.score+Math.floor(state.distance/10)+(win?500:0);if(total>best){best=total;try{localStorage.setItem('shin-rider-best',best);}catch{}}$('best').textContent=String(best).padStart(5,'0');$('result-label').textContent=win?'MISSION COMPLETE':'SIGNAL LOST';$('result-title').textContent=win?'风从未停下。':'再一次，迎风而行。';$('result-text').textContent=`行驶 ${(state.distance/1000).toFixed(2)} km · 总分 ${total} · 最佳 ${best}`;$('result').showModal();}
 function pause(){if(!['playing','paused'].includes(state.mode))return;state.mode=state.mode==='playing'?'paused':'playing';state.absorbing=false;state.charging=false;touchReset();$('pause').textContent=state.mode==='paused'?'▶ 继续':'Ⅱ 暂停';toast(state.mode==='paused'?'骑行已暂停':'继续骑行');}
@@ -297,12 +378,12 @@ if(playing){
  state.speed=T.MathUtils.clamp(state.speed+acceleration*dt,0,320);
  if(previousSpeed<=limit&&state.speed>limit)state.speed=limit;
  let turn=T.MathUtils.clamp((keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+touch.steer,-1,1);state.x=T.MathUtils.clamp(state.x+turn*dt*(3.1+Math.min(state.speed,220)/90),-4.05,4.05);bike.rotation.z=T.MathUtils.lerp(bike.rotation.z,-turn*.2,dt*7);state.distance+=state.speed/3.6*dt;state.invulnerable=Math.max(0,state.invulnerable-dt);if(state.jump>0){state.vy-=15*dt;state.jump=Math.max(0,state.jump+state.vy*dt);}const move=state.speed/3.6*dt;for(const g of envPieces){g.position.z+=move;if(g.position.z>100)g.position.z-=400;}
-for(const item of items){const previousZ=item.position.z;item.position.z+=move;const isEnergy=item.userData.kind==='energy';if(isEnergy)item.rotation.y+=dt*2;if(item.position.z>8){item.position.z-=360;item.position.x=nextItemLane();item.visible=true;}if(item.visible&&(previousZ<1&&item.position.z>-1&&item.position.z<8)&&Math.abs(item.position.x-state.x)<(isEnergy?.85:1.05)){if(isEnergy&&state.jump<1.2){state.score+=25;state.energy=Math.min(100,state.energy+10);item.visible=false;ping(740);toast('+25 · 普拉纳吸收');}else if(!isEnergy&&state.jump<.8&&state.invulnerable===0){state.hp--;state.speed*=.5;state.invulnerable=1.7;item.visible=false;ping(75,.35);toast('受到冲击 · 装甲受损');if(state.hp<=0)finish(false);}}}
+for(const item of items){const previousZ=item.position.z;item.position.z+=move;const isEnergy=item.userData.kind==='energy';if(isEnergy)item.rotation.y+=dt*2;else if(item.userData.kind==='spider')animateEnemy(item,state.time,dt);if(item.position.z>8){item.position.z-=450;item.position.x=nextItemLane();item.visible=true;item.userData.attackTime=null;}if(item.visible&&(previousZ<1&&item.position.z>-1&&item.position.z<8)&&Math.abs(item.position.x-state.x)<(isEnergy?.85:1.05)){if(isEnergy&&state.jump<1.2){state.score+=25;state.energy=Math.min(100,state.energy+10);item.visible=false;ping(740);toast('+25 · 普拉纳吸收');}else if(!isEnergy&&state.jump<.8&&state.invulnerable===0){const damage=item.userData.kind==='spider'?20:10;state.hp=Math.max(0,state.hp-damage);state.speed*=.5;state.invulnerable=1.7;item.visible=false;ping(75,.35);toast((item.userData.kind==='spider'?'蜘蛛怪人':'路障')+' · 生命 -'+damage+'%');if(state.hp<=0)finish(false);}}}
  if(state.energy>=100){
   if(!wasFull&&!state.windReady){state.windReady=true;windBurst=1;state.absorbing=false;state.charging=false;toast('风之力充满 · 可以加速');ping(880,.3);if(typeof navigator!=='undefined'&&navigator.vibrate)navigator.vibrate(30);}
   else state.windReady=true;
  }else state.windReady=false;
- if(state.distance>=3000&&state.mode==='playing')finish(true);const next=Math.min(2,Math.floor(state.distance/1000));if(next>Math.floor((state.distance-move)/1000)&&state.distance<3000){buildEnvironment(next);toast('进入区域 · '+themes[next].name);}
+ if(state.distance>=7000&&state.mode==='playing')finish(true);const next=Math.min(2,Math.floor(state.distance/(7000/3)));if(next>Math.floor((state.distance-move)/(7000/3))&&state.distance<7000){buildEnvironment(next);toast('进入区域 · '+themes[next].name);}
 }else{if(state.mode!=='paused'){state.boost=false;state.charging=false;}if(state.mode==='intro'){bike.rotation.z=Math.sin(t*.5)*.015;}}
 bike.position.set(state.x,state.jump+(state.mode==='playing'?Math.sin(t*22)*state.speed*.00005:0),0);bike.visible=!(state.invulnerable>0&&Math.floor(t*12)%2===0);for(const w of wheels)if(playing)w.rotation.x-=state.speed/3.6/.51*dt;
 // Fixed neck seam, travelling waves and a tapered fluttering tip.
@@ -321,10 +402,10 @@ if(zoom!==1){desired.sub(look).multiplyScalar(zoom).add(look);}const safe=themes
 if(gain){gain.gain.setTargetAtTime(sound&&playing?.025:0,audioContext.currentTime,.1);engine.frequency.setTargetAtTime(35+state.speed*.55+effectPower*25,audioContext.currentTime,.1);}
  if(windGain){windGain.gain.setTargetAtTime(sound&&playing&&state.charging?.09:0,audioContext.currentTime,.15);}
 if(toastTimer>0&&state.mode!=='paused'){toastTimer-=dt;if(toastTimer<=0)$('toast').textContent='';}
-$('speed').textContent=String(Math.round(state.speed)).padStart(3,'0');$('distance').textContent=(state.distance/1000).toFixed(2);$('progress').style.width=Math.min(100,state.distance/30)+'%';$('score').textContent=String(state.score).padStart(4,'0');$('energy').style.width=state.energy+'%';$('health').textContent='▰ '.repeat(state.hp)+'▱ '.repeat(5-state.hp);$('gear').textContent=state.speed<1?'N':Math.min(6,1+Math.floor(state.speed/48));
+updateFinish(state.distance,state.mode);$('speed').textContent=String(Math.round(state.speed)).padStart(3,'0');$('distance').textContent=(state.distance/1000).toFixed(2);$('progress').style.width=Math.min(100,state.distance/70)+'%';$('score').textContent=String(state.score).padStart(4,'0');$('energy').style.width=state.energy+'%';$('health-value').textContent=state.hp+'%';$('health-fill').style.width=state.hp+'%';$('health').classList.toggle('critical',state.hp<=25);$('gear').textContent=state.speed<1?'N':Math.min(6,1+Math.floor(state.speed/48));
 }
 camera.position.set(-5.8,3,-7.8);
 function frame(now){const dt=Math.min((now-last)/1000,.05);last=now;update(dt);renderer.render(scene,camera);requestAnimationFrame(frame);}requestAnimationFrame(frame);
 // Read-only snapshot for diagnostics and automated smoke checks.
-window.riderGame={snapshot:()=>({...state,scene:sceneIndex,objects:renderer.info.render.calls,flamePower:effectPower,windOpacity:windMaterial.opacity,scarfLength:SCARF_LENGTH,clearance:Number.isFinite(envClearance)?+envClearance.toFixed(2):null,beltPower:+chargeFx.toFixed(3),windBurst:+windBurst.toFixed(3),darkness:+darkness.toFixed(2),headlight:+lamp.intensity.toFixed(1),eyeGlow:+eye.emissiveIntensity.toFixed(2),beltGlow:+beltCoreMat.emissiveIntensity.toFixed(2),items:items.map(it=>({kind:it.userData.kind,x:+it.position.x.toFixed(2),z:+it.position.z.toFixed(2),visible:it.visible}))}),start,pause,home,setScene:buildEnvironment};
+window.riderGame={snapshot:()=>({...state,scene:sceneIndex,objects:renderer.info.render.calls,flamePower:effectPower,windOpacity:windMaterial.opacity,scarfLength:SCARF_LENGTH,clearance:Number.isFinite(envClearance)?+envClearance.toFixed(2):null,beltPower:+chargeFx.toFixed(3),windBurst:+windBurst.toFixed(3),darkness:+darkness.toFixed(2),headlight:+lamp.intensity.toFixed(1),eyeGlow:+eye.emissiveIntensity.toFixed(2),beltGlow:+beltCoreMat.emissiveIntensity.toFixed(2),finishVisible:finishGate.visible,finishZ:finishGate.position.z,items:items.map(it=>({kind:it.userData.kind,x:+it.position.x.toFixed(2),z:+it.position.z.toFixed(2),visible:it.visible}))}),start,pause,home,setScene:buildEnvironment};
 })();

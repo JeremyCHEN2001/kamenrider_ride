@@ -123,3 +123,5 @@ dialog{max-height:calc(100% - 16px);overflow:auto}
 .absorbing #touch button[data-key="KeyE"]{background:#2e5b4c;border-color:#b9ffe9;box-shadow:0 0 14px #b9ffe955}
 
 #wind-state,#wind-value{white-space:nowrap}
+
+.health{margin:16px 0;color:#e5b4a6}.health-label{display:flex;justify-content:space-between;align-items:center;font-size:9px;letter-spacing:1px}.stats .health-label b{font:12px monospace;margin:0}.health-track{height:6px;background:#ffffff30;margin-top:8px}.health-track i{display:block;width:100%;height:100%;background:#db725a;transition:width .2s}.health.critical .health-track i{background:#f03d35;box-shadow:0 0 10px #f03d35}.health.critical .health-label{color:#ff7161}
